@@ -219,6 +219,10 @@ class MainActivity : AppCompatActivity() {
 
     private fun checkBTPermissions() {
         if (Build.VERSION.SDK_INT > Build.VERSION_CODES.LOLLIPOP) {
+            Log.d(
+                "Testing",
+                "checkBTPermissions: Above Lollipop"
+            )
             var permissionCheck = checkSelfPermission("Manifest.permission.ACCESS_FINE_LOCATION")
             permissionCheck += checkSelfPermission("Manifest.permission.ACCESS_COARSE_LOCATION")
             if (permissionCheck != 0) {
