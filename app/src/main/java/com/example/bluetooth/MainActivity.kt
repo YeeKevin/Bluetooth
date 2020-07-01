@@ -20,7 +20,7 @@ class MainActivity : AppCompatActivity() {
     val bluetoothAdapter: BluetoothAdapter? = BluetoothAdapter.getDefaultAdapter()
     // array list to hold devices
     var mBTDevices = ArrayList<BluetoothDevice>()
-    var mDeviceListAdapter: DeviceListAdapter? = null
+    lateinit var mDeviceListAdapter: DeviceListAdapter
     // var lvNewDevices: ListView? = null
 
     // Create a BroadcastReceiver for ACTION_FOUND.
@@ -130,6 +130,8 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        mBTDevices = ArrayList<BluetoothDevice>()
+
         btnONOFF.setOnClickListener {
             Log.d("Testing", "onClick: enabling/disabling bluetooth")
             enableDisableBT()
@@ -147,30 +149,37 @@ class MainActivity : AppCompatActivity() {
             registerReceiver(receiver2, intentFilter)
         }
 
+        // Work in progress
         btnFindUnpairedDevices.setOnClickListener {
             Log.d("Testing", "btnFindUnpairedDevices: Looking for unpaired devices")
 
-            if (bluetoothAdapter != null) {
+            Log.d("Testing", "Bluetooth isDiscovering status is ${bluetoothAdapter?.isDiscovering}")
+            // not entering this loop, even when discovering
+           if (bluetoothAdapter != null) {
+               // if it is currently discovering
                 if (bluetoothAdapter.isDiscovering) {
+                    // restart the process
                     bluetoothAdapter.cancelDiscovery()
                     Log.d("Testing", "btnFindUnpairedDevices: Cancelling discovery")
 
                     checkBTPermissions()
-
+                    Log.d("Testing", "btnFindUnpairedDevices: Restarting discovery")
                     bluetoothAdapter.startDiscovery()
                     val discoverDevicesIntent = IntentFilter(BluetoothDevice.ACTION_FOUND)
                     registerReceiver(receiver3, discoverDevicesIntent)
                 }
-            }
+             }
             if (bluetoothAdapter != null) {
-                Log.d("Testing", "btnFindUnpairedDevices: Now attempting to discover")
+                // if not discovering
                 if(!bluetoothAdapter.isDiscovering) {
+                    //
+                    Log.d("Testing", "btnFindUnpairedDevices: Now attempting to discover")
                     checkBTPermissions()
                     bluetoothAdapter.startDiscovery()
                     val discoverDevicesIntent = IntentFilter(BluetoothDevice.ACTION_FOUND)
                     registerReceiver(receiver3, discoverDevicesIntent)
                 }
-            }
+             }
         }
     }
 
@@ -179,6 +188,7 @@ class MainActivity : AppCompatActivity() {
         super.onDestroy()
         unregisterReceiver(receiver)
         unregisterReceiver(receiver2)
+        unregisterReceiver(receiver3)
     }
 
     // using broadcast receiver
