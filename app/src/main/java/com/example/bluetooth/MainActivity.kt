@@ -10,12 +10,15 @@ import android.content.IntentFilter
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
+import android.view.View
+import android.widget.AdapterView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.fragment.app.FragmentActivity
 import kotlinx.android.synthetic.main.activity_main.*
-import java.util.ArrayList
+import java.util.*
 
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity()  {
 
     val bluetoothAdapter: BluetoothAdapter? = BluetoothAdapter.getDefaultAdapter()
     // array list to hold devices
@@ -126,11 +129,46 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private val receiver4 = object : BroadcastReceiver() {
+
+        override fun onReceive(context: Context, intent: Intent) {
+            val action: String? = intent.action
+            when(action) {
+                BluetoothDevice.ACTION_BOND_STATE_CHANGED -> {
+                    val device: BluetoothDevice =
+                        intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE)
+                    // 3 cases
+                    when (device.bondState) {
+                        // bonded already
+                        BluetoothDevice.BOND_BONDED -> {
+                            Log.d("Testing", "BroadcastReceiver: BONG_BONDED")
+                        }
+                        // creating a bond
+                        BluetoothDevice.BOND_BONDING -> {
+                            Log.d("Testing", "BroadcastReceiver: BONG_BONDING")
+                        }
+                        // breaking a bond
+                        BluetoothDevice.BOND_NONE -> {
+                            Log.d("Testing", "BroadcastReceiver: BONG_NONE")
+                        }
+                    }
+
+                }
+            }
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
         mBTDevices = ArrayList<BluetoothDevice>()
+
+        // Broadcasts when bond state changes (pairing)
+        val filter = IntentFilter(BluetoothDevice.ACTION_BOND_STATE_CHANGED)
+        registerReceiver(receiver4, filter)
+
+
 
         btnONOFF.setOnClickListener {
             Log.d("Testing", "onClick: enabling/disabling bluetooth")
@@ -189,6 +227,7 @@ class MainActivity : AppCompatActivity() {
         unregisterReceiver(receiver)
         unregisterReceiver(receiver2)
         unregisterReceiver(receiver3)
+        unregisterReceiver(receiver4)
     }
 
     // using broadcast receiver
@@ -225,19 +264,39 @@ class MainActivity : AppCompatActivity() {
             )
             var permissionCheck = checkSelfPermission("Manifest.permission.ACCESS_FINE_LOCATION")
             permissionCheck += checkSelfPermission("Manifest.permission.ACCESS_COARSE_LOCATION")
-            if (permissionCheck != 0) {
+             if (permissionCheck != 0) {
                 requestPermissions(
                     arrayOf(
                         Manifest.permission.ACCESS_FINE_LOCATION,
                         Manifest.permission.ACCESS_COARSE_LOCATION
                     ), 1001
                 ) //Any number
-            }
+             }
         } else {
             Log.d(
                 "Testing",
                 "checkBTPermissions: No need to check permissions. SDK version < LOLLIPOP."
             )
+        }
+    }
+
+    fun onItemClick(adapterView: AdapterView<*>?, view: View?, i: Int, l: Long) {
+        //first cancel discovery because its very memory intensive.
+
+        if (bluetoothAdapter != null) {
+            bluetoothAdapter.cancelDiscovery()
+        }
+        Log.d("Testing", "onItemClick: You Clicked on a device.")
+        val deviceName = mBTDevices[i].name
+        val deviceAddress = mBTDevices[i].address
+        Log.d("Testing", "onItemClick: deviceName = $deviceName")
+        Log.d("Testing", "onItemClick: deviceAddress = $deviceAddress")
+
+        //create the bond.
+        //NOTE: Requires API 19 or above
+        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.JELLY_BEAN_MR2) {
+            Log.d("Testing", "Trying to pair with $deviceName")
+            mBTDevices[i].createBond()
         }
     }
 }
